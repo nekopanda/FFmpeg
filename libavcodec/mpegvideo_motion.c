@@ -913,6 +913,7 @@ static av_always_inline void mpv_motion_internal(MpegEncContext *s,
     case MV_TYPE_16X8:
         for (i = 0; i < 2; i++) {
             uint8_t **ref2picture;
+            uint8_t *ref2ptrs[3];
 
             if ((s->picture_structure == s->field_select[dir][i] + 1
                 || s->pict_type == AV_PICTURE_TYPE_B || s->first_field) && ref_picture[0]) {
@@ -921,10 +922,14 @@ static av_always_inline void mpv_motion_internal(MpegEncContext *s,
                 ref2picture = s->current_picture_ptr->f->data;
             }
 
+            ref2ptrs[0] = ref2picture[0] + (16 * i) * s->linesize;
+            ref2ptrs[1] = ref2picture[1] + ((16 * i) >> s->chroma_y_shift) * s->uvlinesize;
+            ref2ptrs[2] = ref2picture[2] + ((16 * i) >> s->chroma_y_shift) * s->uvlinesize;
+
             mpeg_motion(s, dest_y, dest_cb, dest_cr,
                         s->field_select[dir][i],
-                        ref2picture, pix_op,
-                        s->mv[dir][i][0], s->mv[dir][i][1] + 16 * i,
+                        ref2ptrs, pix_op,
+                        s->mv[dir][i][0], s->mv[dir][i][1],
                         8, mb_y >> 1);
 
             dest_y  += 16 * s->linesize;
