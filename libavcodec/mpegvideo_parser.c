@@ -41,7 +41,7 @@ static void mpegvideo_extract_headers(AVCodecParserContext *s,
     uint32_t start_code;
     int frame_rate_index, ext_type, bytes_left;
     int frame_rate_ext_n, frame_rate_ext_d;
-    int top_field_first, repeat_first_field, progressive_frame;
+    int picture_structure, top_field_first, repeat_first_field, progressive_frame;
     int horiz_size_ext, vert_size_ext, bit_rate_ext;
     int did_set_size=0;
     int set_dim_ret = 0;
@@ -51,6 +51,7 @@ static void mpegvideo_extract_headers(AVCodecParserContext *s,
     enum AVPixelFormat pix_fmt = AV_PIX_FMT_NONE;
 //FIXME replace the crap with get_bits()
     s->repeat_pict = 0;
+    s->picture_structure = AV_PICTURE_STRUCTURE_UNKNOWN;
 
     while (buf < buf_end) {
         start_code= -1;
@@ -114,6 +115,7 @@ static void mpegvideo_extract_headers(AVCodecParserContext *s,
                     break;
                 case 0x8: /* picture coding extension */
                     if (bytes_left >= 5) {
+                        picture_structure = buf[2] & 0x03;
                         top_field_first = buf[3] & (1 << 7);
                         repeat_first_field = buf[3] & (1 << 1);
                         progressive_frame = buf[4] & (1 << 7);
@@ -138,6 +140,18 @@ static void mpegvideo_extract_headers(AVCodecParserContext *s,
                                 s->field_order = AV_FIELD_BB;
                         } else
                             s->field_order = AV_FIELD_PROGRESSIVE;
+
+                        switch (picture_structure) {
+                        case PICT_TOP_FIELD:
+                            s->picture_structure = AV_PICTURE_STRUCTURE_TOP_FIELD;
+                            break;
+                        case PICT_BOTTOM_FIELD:
+                            s->picture_structure = AV_PICTURE_STRUCTURE_BOTTOM_FIELD;
+                            break;
+                        case PICT_FRAME:
+                            s->picture_structure = AV_PICTURE_STRUCTURE_FRAME;
+                            break;
+                        }
                     }
                     break;
                 }
