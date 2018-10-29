@@ -49,6 +49,9 @@ typedef struct Picture {
     AVBufferRef *qscale_table_buf;
     int8_t *qscale_table;
 
+    AVBufferRef *mb_dc_table_buf;
+    uint8_t *mb_dc_table;
+
     AVBufferRef *motion_val_buf[2];
     int16_t (*motion_val[2])[2];
 

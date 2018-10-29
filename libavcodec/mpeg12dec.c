@@ -1843,6 +1843,20 @@ static int mpeg_decode_slice(MpegEncContext *s, int mb_y,
         s->dest[1] +=(16 >> lowres) >> s->chroma_x_shift;
         s->dest[2] +=(16 >> lowres) >> s->chroma_x_shift;
 
+        // make mb_dc_table
+        int mb_xy = s->mb_x + s->mb_y * s->mb_stride;
+        int mb_type = s->current_picture.mb_type[mb_xy];
+        if (!(mb_type & MB_TYPE_SKIP) && (mb_type & (7 | MB_TYPE_CBP))) {
+            int sum = 0;
+            for (int b = 0; b < 4; ++b) {
+                sum += FFABS(s->block[b][0]);
+            }
+            s->current_picture.mb_dc_table[mb_xy] = av_clip_uint8(sum >> (2 + 3));
+        }
+        else {
+            s->current_picture.mb_dc_table[mb_xy] = 0;
+        }
+
         ff_mpv_reconstruct_mb(s, s->block);
 
         if (++s->mb_x >= s->mb_width) {

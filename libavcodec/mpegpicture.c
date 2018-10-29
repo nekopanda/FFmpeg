@@ -45,6 +45,7 @@ do {\
     MAKE_WRITABLE(mbskip_table_buf);
     MAKE_WRITABLE(qscale_table_buf);
     MAKE_WRITABLE(mb_type_buf);
+    MAKE_WRITABLE(mb_dc_table_buf);
 
     for (i = 0; i < 2; i++) {
         MAKE_WRITABLE(motion_val_buf[i]);
@@ -194,6 +195,10 @@ static int alloc_picture_tables(AVCodecContext *avctx, Picture *pic, int encodin
     if (!pic->mbskip_table_buf || !pic->qscale_table_buf || !pic->mb_type_buf)
         return AVERROR(ENOMEM);
 
+    pic->mb_dc_table_buf = av_buffer_allocz(big_mb_num + mb_stride);
+    if (!pic->mb_dc_table_buf)
+        return AVERROR(ENOMEM);
+
     if (encoding) {
         pic->mb_var_buf    = av_buffer_allocz(mb_array_size * sizeof(int16_t));
         pic->mc_mb_var_buf = av_buffer_allocz(mb_array_size * sizeof(int16_t));
@@ -272,6 +277,7 @@ int ff_alloc_picture(AVCodecContext *avctx, Picture *pic, MotionEstContext *me,
     pic->mbskip_table = pic->mbskip_table_buf->data;
     pic->qscale_table = pic->qscale_table_buf->data + 2 * mb_stride + 1;
     pic->mb_type      = (uint32_t*)pic->mb_type_buf->data + 2 * mb_stride + 1;
+    pic->mb_dc_table  = pic->mb_dc_table_buf->data + 2 * mb_stride + 1;
 
     if (pic->motion_val_buf[0]) {
         for (i = 0; i < 2; i++) {
@@ -336,6 +342,7 @@ do {                                                                          \
     UPDATE_TABLE(mbskip_table_buf);
     UPDATE_TABLE(qscale_table_buf);
     UPDATE_TABLE(mb_type_buf);
+    UPDATE_TABLE(mb_dc_table_buf);
     for (i = 0; i < 2; i++) {
         UPDATE_TABLE(motion_val_buf[i]);
         UPDATE_TABLE(ref_index_buf[i]);
@@ -347,6 +354,7 @@ do {                                                                          \
     dst->mbskip_table  = src->mbskip_table;
     dst->qscale_table  = src->qscale_table;
     dst->mb_type       = src->mb_type;
+    dst->mb_dc_table   = src->mb_dc_table;
     for (i = 0; i < 2; i++) {
         dst->motion_val[i] = src->motion_val[i];
         dst->ref_index[i]  = src->ref_index[i];
@@ -470,6 +478,7 @@ void ff_free_picture_tables(Picture *pic)
     av_buffer_unref(&pic->mbskip_table_buf);
     av_buffer_unref(&pic->qscale_table_buf);
     av_buffer_unref(&pic->mb_type_buf);
+    av_buffer_unref(&pic->mb_dc_table_buf);
 
     for (i = 0; i < 2; i++) {
         av_buffer_unref(&pic->motion_val_buf[i]);

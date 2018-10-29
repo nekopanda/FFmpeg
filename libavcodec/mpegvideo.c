@@ -1443,7 +1443,19 @@ int ff_mpv_export_qp_table(MpegEncContext *s, AVFrame *f, Picture *p, int qp_typ
     av_assert0(ref->size >= offset + s->mb_stride * ((f->height+15)/16));
     ref->size -= offset;
     ref->data += offset;
-    return av_frame_set_qp_table(f, ref, s->mb_stride, qp_type);
+    int ret = av_frame_set_qp_table(f, ref, s->mb_stride, qp_type);
+    if (ret)
+        return ret;
+
+    ref = av_buffer_ref(p->mb_dc_table_buf);
+    ref->size -= offset;
+    ref->data += offset;
+    if (!av_frame_new_side_data_from_buf(f, AV_FRAME_DATA_MB_DC_TABLE_DATA, ref)) {
+        av_buffer_unref(&ref);
+        return AVERROR(ENOMEM);
+    }
+
+    return 0;
 }
 
 static inline int hpel_motion_lowres(MpegEncContext *s,
