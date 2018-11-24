@@ -777,8 +777,16 @@ static int update_wrap_reference(AVFormatContext *s, AVStream *st, int stream_in
         while (program) {
             if (program->pts_wrap_reference != pts_wrap_reference) {
                 for (i = 0; i<program->nb_stream_indexes; i++) {
+                  if (s->streams[program->stream_index[i]]->pts_wrap_reference != AV_NOPTS_VALUE &&
+                    (s->streams[program->stream_index[i]]->pts_wrap_reference - pts_wrap_reference > 1LL << st->pts_wrap_bits - 3 ||
+                      s->streams[program->stream_index[i]]->pts_wrap_reference < pts_wrap_reference)) {
+                    pts_wrap_reference = s->streams[program->stream_index[i]]->pts_wrap_reference;
+                    pts_wrap_behavior = s->streams[program->stream_index[i]]->pts_wrap_behavior;
+                  }
+                  else {
                     s->streams[program->stream_index[i]]->pts_wrap_reference = pts_wrap_reference;
                     s->streams[program->stream_index[i]]->pts_wrap_behavior = pts_wrap_behavior;
+                  }
                 }
 
                 program->pts_wrap_reference = pts_wrap_reference;
